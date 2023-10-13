@@ -1,0 +1,245 @@
+/*
+This program is an experiment to see if I can get one sensor to activate another one.
+The goal is to have a PIR sensor be tripped which leads to a sonar sensor to take a distance measurement.
+If the new distance recorded varies from the previous one, calculate the speed.
+*/
+
+//defining the trigger and echo pins for the proximity sensor
+#define trig 12
+#define echo 14
+
+//define pin for PIR sensor
+#define pir 27
+
+//define trigger time for proximity sensor
+#define trigdur .01
+
+//set up placeholders for proximity sensor calculations
+long timeTrigPrev = millis();
+//long timeTrigB = millis();
+long timeTrig = millis();
+long timeEchoPrev = millis();
+//long timeEchoB = millis();
+long timeEcho = millis();
+long distance = 0;
+long distancePrev = 0;
+//long distanceB = 0;
+long speed = 0;
+
+void setup() {
+  Serial.begin(115200);
+  //establish pinMode for Proximity and PIR sensors
+  pinMode(trig, OUTPUT);
+  pinMode(echo, INPUT_PULLUP);
+  pinMode(pir, INPUT_PULLUP);
+
+  //set interrupt for PIR sensor, executed whenever something is waved in front of it
+  attachInterrupt(digitalPinToInterrupt(pir), calculateSpeed, RISING);
+  //set interrupt for echo pin, executed whenever the trigger signal is sent and an echo is received
+  attachInterrupt(digitalPinToInterrupt(echo), readDistance, FALLING);
+
+}
+
+void loop() {
+  /*
+  Control structure for determining what to print. 
+  If the distance is the same as the previous recording and it does not equal 0, 
+    update variables and print nothing.
+  Else, if the distance is not 0 and it differs from the previous measurement recorded, 
+    print the speed based on the difference between the measurements.
+  Else, print the distance.
+
+  Still running into issues with getting an accurate speed reading due to
+    uncertainty regarding when to update previous measurements. Should
+    it be done in the interrupt functions? Should it only be updated when speed
+    is calculated? 
+  Also hard to tell without a proper testing environment
+    (need a controlled moving object to double check recorded values. Maybe I could
+    put together a track and motor to make something move at a set speed?)
+  */
+
+  if((distance == distancePrev) && (distance != 0)){
+    //no distance has been recorded, carry on
+    //Serial.println("No change recorded");
+    //delay(1000);
+    distancePrev = distance;
+    timeEchoPrev = timeEcho;
+    timeTrigPrev = timeTrig;
+  }else if((distancePrev != 0) && (distancePrev != distance)) {
+  
+    //print timing from previous measurement and current measurement
+    Serial.println("Time Trig: " + String(timeTrig) + " Time Echo: " + String(timeEcho));
+    Serial.println("Previous Trig: " + String(timeTrigPrev) + " Previous Echo: " + String(timeEchoPrev));
+  
+    //print previous distance and times for debugging
+    Serial.println("Previous distance was: " + String(distancePrev) + "in Current distance is: " + String(distance) + "in");
+  
+    //calculate speed
+    speed = (abs(distancePrev - distance))/((abs(timeEchoPrev - timeEcho)) / 1000);
+
+    //print calulcated speed
+    Serial.println("Speed is calculated as: " + String(speed) + "in/mS");
+  
+    //update the previous distance and times recorded to the current one
+    distancePrev = distance;
+    timeTrigPrev = timeTrig;
+    timeEchoPrev = timeEcho;
+
+    //delay for sanity's sake
+    //delay(3000);
+  }else{
+    //Since no change has been detected, update the previous distance and times recorded to the current one
+    distancePrev = distance;
+    timeTrigPrev = timeTrig;
+    timeEchoPrev = timeEcho;
+    Serial.println("Distance is: " + String(distance) + "in");
+    //sanity delay
+    //delay(3000);
+  }
+  
+
+  //Experiementing with eliminating interrupt for PIR sensor
+  /*int pirValue = digitalRead(pir);
+
+  if (pirValue == HIGH) {
+    delay(1000);
+    Serial.println("Motion detected!");
+    calculateSpeed();
+    delay(1000);
+  }*/
+  //Serial.println(distance);
+
+  /*while(digitalRead(pir) == LOW) {
+    if(digitalRead(pir) == RISING) {
+      Serial.println("Loop Works");
+      calculateSpeed();
+      break;
+    }
+  }*/
+  //Serial.println("Waiting for PIR to be tripped");
+
+/*
+  Serial.println("Triggering Now");
+  //Triggering the sensor
+  digitalWrite(trig, HIGH);
+  //allowing 10uS for trigger
+  delay(.01);
+  //disabling the trigger
+  digitalWrite(trig, LOW);
+  //recording trigger time for distance calculation
+  timeTrig = millis();
+  //print out distance recorded from readDistance function
+  Serial.println(distance);
+  //allowing some time to check results
+  delay(1000);
+*/
+}
+
+void calculateSpeed() {
+  /*
+  This function executes whenever the PIR sensor is tripped.
+
+  Its purpose is to trigger the sonar sensor to take a distance measurement and record
+  the time when the sonar was triggered.
+  */
+
+  /* 
+  I read that having time-consuming functions like delays and Serial.println 
+  statements in an interrupt can lead to issues.
+
+  I commented them all out and moved some print statements to the main loop for 
+  debugging.
+  */
+
+  //Serial.println("PIR Tripped");
+  //trigger the proximity sensor
+  //Serial.println("Trigger Start");
+
+  //Save the previous trigger time in case distance has been changed and speed must be calculated
+  //timeTrigPrev = timeTrig;
+  
+  //Trigger the sonar sensor, activating the interrupt to go into the readDistance() function
+  digitalWrite(trig, HIGH);
+  delay(trigdur);
+  digitalWrite(trig, LOW);
+  
+  //Serial.println("Trigger End");
+  //Serial.println(esp_timer_get_time() / 1000);
+  //uint64_t timeTrig = esp_timer_get_time() / 1000;
+  
+  //Update the trigger time
+  timeTrig = millis();
+  
+  //delay(500); 
+  //readDistance();
+  //timeEchoPrev = timeEcho;
+  //distancePrev = distance;
+  
+  /*
+  I originally thought I could take two distance measurements within this function.
+  Ended up running into interrupt issues where the sonar interrupt would execute
+  while the pir interrupt was still going.
+  Resolved by just having a variables to record the previous measurements and compare to the current ones
+  to see if speed needs to be calculated.
+  */
+
+  //Serial.println("First distance recorded " + String(distancePrev) + "in");
+  /*Serial.println(distancePrev);
+  Serial.println(timeTrigPrev);
+  Serial.println(timeEchoPrev);*/  
+  //delay(3000);
+
+  //second distance measurement
+  /*digitalWrite(trig, HIGH);
+  delay(trigdur);
+  digitalWrite(trig, LOW);
+  timeTrig = millis();
+  timeTrigB = timeTrig;
+  readDistance();
+  timeEchoB = timeEcho;
+  distanceB = distance;
+
+  Serial.println("Second Distance Recorded");*/
+  /*Serial.println(distanceB);
+  Serial.println(timeTrigB);
+  Serial.println(timeEchoB);*/
+
+  //calculate speed
+  //speed = (abs(distancePrev - distanceB))/(abs((timeEchoPrev - timeTrigPrev) - (timeEchoB - timeTrigB)));
+  
+  //Serial.println("Speed has been recorded as: " + speed);
+}
+
+void readDistance() {
+  /*
+  This function should execute after the sonar sensor has been 
+  triggered, sends out a sound wave, and receives its echo.
+  */
+
+  //Save the previous measurement echo time in case a speed needs to be calculated
+  //timeEchoPrev = timeEcho;
+
+  //Update the echo time to the current measurement recording
+  timeEcho = millis();
+  
+  /*
+  Distance formula from the HC-SR04 spec sheet:
+  Formula: uS / 58 = centimeters or uS / 148 =inch; or: 
+  the range = high level time * velocity (340M/S) / 2; 
+  we suggest to use over 60ms measurement cycle, in order to prevent trigger signal to the echo signal. 
+  */
+
+  //Original distance formula
+  //distance = ((timeEcho - timeTrig) * 340) / 2;
+  
+  //Distance formula for Inches
+  distance = ((timeEcho - timeTrig) * 1000) / 148;
+
+  //Distance formula for centimeters
+  //distance = ((timeEcho - timeTrig) * 1000) / 58;
+
+  //Experimenting with removing millis()
+  //uint64_t timeEcho = esp_timer_get_time() / 1000;
+  //Serial.println("Time Triggered: " + String(timeTrig));
+  //Serial.println("Time Echo'd: " + String(timeEcho));
+}
