@@ -26,6 +26,16 @@ long distancePrev = 0;
 //long distanceB = 0;
 long speed = 0;
 
+/*Want to add a timer to check how long it has been since the last measurement recorded.
+If it has been long enough, forget the previous recording.
+Instead of using a new timer variable, thought I may be able to implement this using the existing 
+timeEcho and timeEchoPrev variables.
+
+TRY TO IMPLEMENT IN YOUR IF ELSE STATEMENT BY COMPARING TIMEECHOPREV AND TIMEECHO AS YOUR CONDITIONALS
+*/
+//Interval Timer
+//long intervalTime = 0;
+
 void setup() {
   Serial.begin(115200);
   //establish pinMode for Proximity and PIR sensors
@@ -43,11 +53,6 @@ void setup() {
 void loop() {
   /*
   Control structure for determining what to print. 
-  If the distance is the same as the previous recording and it does not equal 0, 
-    update variables and print nothing.
-  Else, if the distance is not 0 and it differs from the previous measurement recorded, 
-    print the speed based on the difference between the measurements.
-  Else, print the distance.
 
   Still running into issues with getting an accurate speed reading due to
     uncertainty regarding when to update previous measurements. Should
@@ -58,15 +63,20 @@ void loop() {
     put together a track and motor to make something move at a set speed?)
   */
 
-  if((distance == distancePrev) && (distance != 0)){
-    //no distance has been recorded, carry on
-    //Serial.println("No change recorded");
-    //delay(1000);
-    distancePrev = distance;
-    timeEchoPrev = timeEcho;
-    timeTrigPrev = timeTrig;
-  }else if((distancePrev != 0) && (distancePrev != distance)) {
-  
+  //Using this loop to prevent repeated outputs before having the PIR sensor activate again
+  while(digitalRead(pir) == LOW){
+  }
+
+  if((distancePrev != 0) && (distancePrev != distance) && (timeEchoPrev > timeEcho - 5000)) {
+    //distancePrev = distance;
+    //timeTrigPrev = timeTrig;
+    //timeEchoPrev = timeEcho;
+    Serial.println("Distance is: " + String(distance) + "in");
+    //sanity delay
+    //delay(3000);
+    Serial.println("111111111");
+    
+  }else if((distancePrev != 0) && (distancePrev != distance) && (timeEchoPrev < timeEcho - 5000)) {
     //print timing from previous measurement and current measurement
     Serial.println("Time Trig: " + String(timeTrig) + " Time Echo: " + String(timeEcho));
     Serial.println("Previous Trig: " + String(timeTrigPrev) + " Previous Echo: " + String(timeEchoPrev));
@@ -81,20 +91,28 @@ void loop() {
     Serial.println("Speed is calculated as: " + String(speed) + "in/mS");
   
     //update the previous distance and times recorded to the current one
-    distancePrev = distance;
-    timeTrigPrev = timeTrig;
-    timeEchoPrev = timeEcho;
-
+    //distancePrev = distance;
+    //timeTrigPrev = timeTrig;
+    //timeEchoPrev = timeEcho;
     //delay for sanity's sake
     //delay(3000);
-  }else{
+    Serial.println("2222222");
+    
+  }else if((distance == distancePrev) && (distancePrev != 0) && (timeEchoPrev > timeEcho - 5000)){
+    //If no new measurement has been taken in five seconds, reset the values for the previous recorded measurement
+    distancePrev = 0;
+    timeEchoPrev = 0;
+    timeTrigPrev = 0;
+    Serial.println("3333333");
+  }else if(distance != 0){
     //Since no change has been detected, update the previous distance and times recorded to the current one
-    distancePrev = distance;
-    timeTrigPrev = timeTrig;
-    timeEchoPrev = timeEcho;
+    //distancePrev = distance;
+    //timeTrigPrev = timeTrig;
+    //timeEchoPrev = timeEcho;
+
+    //Distance does not equal 0, print out the distance
     Serial.println("Distance is: " + String(distance) + "in");
-    //sanity delay
-    //delay(3000);
+    Serial.println("4444444");
   }
   
 
@@ -156,8 +174,11 @@ void calculateSpeed() {
   //Serial.println("Trigger Start");
 
   //Save the previous trigger time in case distance has been changed and speed must be calculated
-  //timeTrigPrev = timeTrig;
+  timeTrigPrev = timeTrig;
   
+  //Update the trigger time
+  timeTrig = millis();
+
   //Trigger the sonar sensor, activating the interrupt to go into the readDistance() function
   digitalWrite(trig, HIGH);
   delay(trigdur);
@@ -167,8 +188,7 @@ void calculateSpeed() {
   //Serial.println(esp_timer_get_time() / 1000);
   //uint64_t timeTrig = esp_timer_get_time() / 1000;
   
-  //Update the trigger time
-  timeTrig = millis();
+  
   
   //delay(500); 
   //readDistance();
@@ -217,11 +237,24 @@ void readDistance() {
   */
 
   //Save the previous measurement echo time in case a speed needs to be calculated
-  //timeEchoPrev = timeEcho;
+  timeEchoPrev = timeEcho;
 
   //Update the echo time to the current measurement recording
   timeEcho = millis();
   
+  //Check if there has been a long enough gap since the last time measured.
+  /*if((timeEchoPrev > (timeEcho - 5000)) && (timeEchoPrev != 0)){
+    timeEchoPrev = 0;
+    timeTrigPrev = 0;
+    distancePrev = 0;
+  }else{
+    distancePrev = distance;
+    //distance = ((timeEcho - timeTrig) * 1000) / 148;
+  }*/
+  
+  //Save the current distance value as the previously recorded distance before recording a new one
+  distancePrev = distance;
+
   /*
   Distance formula from the HC-SR04 spec sheet:
   Formula: uS / 58 = centimeters or uS / 148 =inch; or: 
