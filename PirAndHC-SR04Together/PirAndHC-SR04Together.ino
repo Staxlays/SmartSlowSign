@@ -21,10 +21,14 @@ long timeTrig = millis();
 long timeEchoPrev = millis();
 //long timeEchoB = millis();
 long timeEcho = millis();
-long distance = 0;
-long distancePrev = 0;
+float distance = 0;
+float distancePrev = 0;
 //long distanceB = 0;
-long speed = 0;
+float speed = 0;
+//Change in distance between two measurements
+float deltaDistance = 0;
+//Change in time between measurements
+long deltaTime = 0;
 
 /*Want to add a timer to check how long it has been since the last measurement recorded.
 If it has been long enough, forget the previous recording.
@@ -44,13 +48,50 @@ void setup() {
   pinMode(pir, INPUT_PULLUP);
 
   //set interrupt for PIR sensor, executed whenever something is waved in front of it
-  attachInterrupt(digitalPinToInterrupt(pir), calculateSpeed, RISING);
+  //attachInterrupt(digitalPinToInterrupt(pir), activateSonar, RISING);
   //set interrupt for echo pin, executed whenever the trigger signal is sent and an echo is received
-  attachInterrupt(digitalPinToInterrupt(echo), readDistance, FALLING);
+  //attachInterrupt(digitalPinToInterrupt(echo), readDistance, FALLING);
 
 }
 
 void loop() {
+  //Serial.println("PIR: " + String(digitalRead(pir)) + " Sonar: " + String(digitalRead(echo)));
+  //wait for PIR pin to rise
+  if(digitalRead(pir) == 1){
+    activateSonar();
+    if(digitalRead(echo) == 1){
+      while(digitalRead(echo) == 1){
+        //Serial.println("Waiting for the FALL");
+      }
+      readDistance();
+      if((timeEchoPrev >= timeEcho - 7000) && (distancePrev != distance) && (distancePrev != 0)){
+        if(distancePrev >= distance){
+          deltaDistance = distancePrev - distance;
+        }else{
+          deltaDistance = distance - distancePrev;
+        }
+        deltaTime = (timeEcho - timeEchoPrev) / 1000;
+        Serial.println("deltaDistance: " + String(deltaDistance) + " deltaTime: " + String(deltaTime));
+        speed = deltaDistance / float(deltaTime);
+        //speed = (abs(distancePrev - distance) / (abs(timeEchoPrev - timeEcho) / 1000));
+        Serial.println("distancePrev : " + String(distancePrev) + " distance: " + String(distance) + " timeEchoPrev: " + String(timeEchoPrev) + " timeEcho: " + String(timeEcho));
+        Serial.println("Speed is: " + String(speed) + "in/S");
+        timeEchoPrev = timeEcho;
+        distancePrev = distance;
+        delay(2000);
+      }else{
+        Serial.println("Distance is: " + String(distance));
+        timeEchoPrev = timeEcho;
+        distancePrev = distance;
+        delay(2000);
+      }
+    }
+  }
+ 
+ 
+ 
+ 
+ 
   /*
   Control structure for determining what to print. 
 
@@ -64,7 +105,7 @@ void loop() {
   */
 
   //Using this loop to prevent repeated outputs before having the PIR sensor activate again
-  while(digitalRead(pir) == LOW){
+ /* while(digitalRead(pir) == LOW){
   }
 
   if((distancePrev != 0) && (distancePrev != distance) && (timeEchoPrev > timeEcho - 5000)) {
@@ -114,7 +155,7 @@ void loop() {
     Serial.println("Distance is: " + String(distance) + "in");
     Serial.println("4444444");
   }
-  
+  */
 
   //Experiementing with eliminating interrupt for PIR sensor
   /*int pirValue = digitalRead(pir);
@@ -122,7 +163,7 @@ void loop() {
   if (pirValue == HIGH) {
     delay(1000);
     Serial.println("Motion detected!");
-    calculateSpeed();
+    activateSonar();
     delay(1000);
   }*/
   //Serial.println(distance);
@@ -130,7 +171,7 @@ void loop() {
   /*while(digitalRead(pir) == LOW) {
     if(digitalRead(pir) == RISING) {
       Serial.println("Loop Works");
-      calculateSpeed();
+      activateSonar();
       break;
     }
   }*/
@@ -153,7 +194,7 @@ void loop() {
 */
 }
 
-void calculateSpeed() {
+void activateSonar() {
   /*
   This function executes whenever the PIR sensor is tripped.
 
@@ -174,7 +215,7 @@ void calculateSpeed() {
   //Serial.println("Trigger Start");
 
   //Save the previous trigger time in case distance has been changed and speed must be calculated
-  timeTrigPrev = timeTrig;
+  //timeTrigPrev = timeTrig;
   
   //Update the trigger time
   timeTrig = millis();
@@ -237,7 +278,7 @@ void readDistance() {
   */
 
   //Save the previous measurement echo time in case a speed needs to be calculated
-  timeEchoPrev = timeEcho;
+  //timeEchoPrev = timeEcho;
 
   //Update the echo time to the current measurement recording
   timeEcho = millis();
