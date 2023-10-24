@@ -4,20 +4,27 @@ The goal is to have a PIR sensor be tripped which leads to a sonar sensor to tak
 If the new distance recorded varies from the previous one, calculate the speed.
 */
 
+//Experimenting with modular development. Testing .h and .cpp files for PIR Sensor
+#include <pirSensor.h>
+#include <hcsr04.h>
+
 //defining the trigger and echo pins for the proximity sensor
-#define trig 12
-#define echo 14
+//#define trig 12
+//#define echo 14
 
 //define pin for PIR sensor
-#define pir 27
+//#define pir 27
+
+pirSensor pir(27);
+hcsr04 sonar(14, 12);
 
 //define trigger time for proximity sensor
-#define trigdur .01
+//#define trigdur .01
 
 //set up placeholders for proximity sensor calculations
 long timeTrigPrev = millis();
 //long timeTrigB = millis();
-long timeTrig = millis();
+//long timeTrig = millis();
 long timeEchoPrev = millis();
 //long timeEchoB = millis();
 long timeEcho = millis();
@@ -43,9 +50,11 @@ TRY TO IMPLEMENT IN YOUR IF ELSE STATEMENT BY COMPARING TIMEECHOPREV AND TIMEECH
 void setup() {
   Serial.begin(115200);
   //establish pinMode for Proximity and PIR sensors
-  pinMode(trig, OUTPUT);
-  pinMode(echo, INPUT_PULLUP);
-  pinMode(pir, INPUT_PULLUP);
+  //pinMode(trig, OUTPUT);
+  //pinMode(echo, INPUT_PULLUP);
+  //pinMode(pir, INPUT_PULLUP);
+  pir.initializePir();
+  sonar.initializeSonar();
 
   //set interrupt for PIR sensor, executed whenever something is waved in front of it
   //attachInterrupt(digitalPinToInterrupt(pir), activateSonar, RISING);
@@ -56,35 +65,42 @@ void setup() {
 
 void loop() {
   //Serial.println("PIR: " + String(digitalRead(pir)) + " Sonar: " + String(digitalRead(echo)));
+  //Serial.println(String(pir.isActive()));
   //wait for PIR pin to rise
-  if(digitalRead(pir) == 1){
-    activateSonar();
-    if(digitalRead(echo) == 1){
-      while(digitalRead(echo) == 1){
+  if(pir.currentStatus() == 1){   //digitalRead(pir) == 1){
+    //activateSonar();
+    //Serial.println("Trying to trigger");
+    //pir.triggerSonar();
+    sonar.triggerSonar();
+    if(sonar.currentStatus() == 1){
+      while(sonar.currentStatus() == 1){
         //Serial.println("Waiting for the FALL");
       }
-      readDistance();
-      if((timeEchoPrev >= timeEcho - 7000) && (distancePrev != distance) && (distancePrev != 0)){
-        if(distancePrev >= distance){
-          deltaDistance = distancePrev - distance;
+      sonar.readDistance();
+      Serial.println("Current distance is: " + String(sonar.distance));
+      sonar.calculateSpeed(sonar.distance, sonar.prevDistance, sonar.echoTime, sonar.prevEchoTime);
+      Serial.println("Speed: " + String(sonar.speed));
+      /*if((sonar.prevEchoTime >= sonar.echoTime - 7000) && (sonar.prevDistance != sonar.distance) && (sonar.prevDistance != 0)){
+        if(sonar.prevDistance >= sonar.distance){
+          deltaDistance = sonar.prevDistance - sonar.distance;
         }else{
-          deltaDistance = distance - distancePrev;
+          deltaDistance = sonar.distance - sonar.prevDistance;
         }
-        deltaTime = (timeEcho - timeEchoPrev) / 1000;
+        deltaTime = (sonar.echoTime - sonar.prevEchoTime) / 1000;
         Serial.println("deltaDistance: " + String(deltaDistance) + " deltaTime: " + String(deltaTime));
         speed = deltaDistance / float(deltaTime);
         //speed = (abs(distancePrev - distance) / (abs(timeEchoPrev - timeEcho) / 1000));
-        Serial.println("distancePrev : " + String(distancePrev) + " distance: " + String(distance) + " timeEchoPrev: " + String(timeEchoPrev) + " timeEcho: " + String(timeEcho));
+        Serial.println("distancePrev : " + String(sonar.prevDistance) + " distance: " + String(sonar.distance) + " timeEchoPrev: " + String(sonar.prevEchoTime) + " timeEcho: " + String(sonar.echoTime));
         Serial.println("Speed is: " + String(speed) + "in/S");
-        timeEchoPrev = timeEcho;
-        distancePrev = distance;
+        sonar.prevEchoTime = sonar.echoTime;
+        sonar.prevDistance = sonar.distance;
         delay(2000);
       }else{
-        Serial.println("Distance is: " + String(distance));
-        timeEchoPrev = timeEcho;
-        distancePrev = distance;
+        Serial.println("Distance is: " + String(sonar.distance));
+        sonar.prevEchoTime = sonar.echoTime;
+        sonar.prevDistance = sonar.distance;
         delay(2000);
-      }
+      }*/
     }
   }
  
@@ -194,7 +210,7 @@ void loop() {
 */
 }
 
-void activateSonar() {
+//void activateSonar() {
   /*
   This function executes whenever the PIR sensor is tripped.
 
@@ -218,7 +234,7 @@ void activateSonar() {
   //timeTrigPrev = timeTrig;
   
   //Update the trigger time
-  timeTrig = millis();
+  /*timeTrig = millis();
 
   //Trigger the sonar sensor, activating the interrupt to go into the readDistance() function
   digitalWrite(trig, HIGH);
@@ -269,7 +285,7 @@ void activateSonar() {
   //speed = (abs(distancePrev - distanceB))/(abs((timeEchoPrev - timeTrigPrev) - (timeEchoB - timeTrigB)));
   
   //Serial.println("Speed has been recorded as: " + speed);
-}
+//}
 
 void readDistance() {
   /*
@@ -307,7 +323,7 @@ void readDistance() {
   //distance = ((timeEcho - timeTrig) * 340) / 2;
   
   //Distance formula for Inches
-  distance = ((timeEcho - timeTrig) * 1000) / 148;
+  distance = ((timeEcho - timeEchoPrev) * 1000) / 148;
 
   //Distance formula for centimeters
   //distance = ((timeEcho - timeTrig) * 1000) / 58;
