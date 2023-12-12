@@ -19,10 +19,20 @@ void hcsr04::initializeSonar(){
 }
 
 void hcsr04::triggerSonar(){
-	triggerTime = millis();
 	digitalWrite(triggerPin, HIGH);
 	delay(.01);
 	digitalWrite(triggerPin, LOW);
+	triggerTime = millis();
+	//delay(60);
+	//while(digitalRead(echoPin) == 0){};
+	/*if(digitalRead(echoPin) == 1){
+		while(digitalRead(echoPin) == 1){
+		//waiting for the return pulse (proportional to the distance recorded) to end
+		//delay(1);
+		}
+	}*/
+	//echoTime = millis();
+	//delay(2000);
 }
 
 int hcsr04::currentStatus(){
@@ -30,14 +40,32 @@ int hcsr04::currentStatus(){
 }
 
 float hcsr04::readDistance(){
-	prevEchoTime = echoTime;
+	//units are inches
+
+	//while(digitalRead(echoPin) == 1){
+		//waiting for the return pulse to end
+	//}
 	echoTime = millis();
-	prevDistance = distance;
-  	distance = ((echoTime - triggerTime) * 1000) / 148;
-  	delay(2000);
-  	return distance;
+	//prevEchoTime = echoTime;
+	//echoTime = millis();
+	//prevDistance = distance;
+  distance = ((echoTime - triggerTime) * 1000) / 148;
+  //delay(60);
+  //delay(2000);
+  return distance;
 }
 
+float hcsr04::calculateSpeed(hcsr04&A, hcsr04&B){
+	//units are mph
+	if(A.distance == 0 || B.distance == 0){
+		return 0;
+	}else{
+		return (abs(((B.distance - A.distance)/63660)/((B.echoTime - A.echoTime)/3600000)));
+	}
+
+
+}
+/*
 float hcsr04::calculateSpeed(float distance, float prevDistance, long echoTime, long prevEchoTime){
   	if((prevEchoTime >= echoTime - 7000) && (prevDistance != distance) && (prevDistance != 0)){
         if(prevDistance >= distance){
@@ -62,3 +90,4 @@ float hcsr04::calculateSpeed(float distance, float prevDistance, long echoTime, 
        return 0;
     }
 }
+*/

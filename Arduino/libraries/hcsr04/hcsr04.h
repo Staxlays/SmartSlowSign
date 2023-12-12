@@ -10,7 +10,8 @@ public:
 	void triggerSonar();
 	int currentStatus();
 	float readDistance();
-	float calculateSpeed(float distance, float prevDistance, long echoTime, long prevEchoTime);
+	//float calculateSpeed(float distance, float prevDistance, long echoTime, long prevEchoTime);
+	float calculateSpeed(hcsr04&A, hcsr04&B);
 
 	float distance;
 	float prevDistance;

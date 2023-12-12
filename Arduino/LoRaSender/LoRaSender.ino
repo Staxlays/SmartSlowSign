@@ -1,6 +1,6 @@
 /*
 This program is an experiment to see if I can get one sensor to activate another one.
-The goal is to have a PIR sensor be tripped which leads to a sonar sensor to take a distance measurement.
+The goal is to have a PIR sensor be tripped which leads to a dolphin sensor to take a distance measurement.
 If the new distance recorded varies from the previous one, calculate the speed.
 */
 
@@ -17,7 +17,9 @@ If the new distance recorded varies from the previous one, calculate the speed.
 #define dio0 2
 
 pirSensor pir(27);
-hcsr04 sonar(13, 12);
+hcsr04 dolphin(13, 12);
+hcsr04 bat(25,26);
+
 
 /*Want to add a timer to check how long it has been since the last measurement recorded.
 If it has been long enough, forget the previous recording.
@@ -32,7 +34,8 @@ void setup() {
   while (!Serial);
   Serial.println("LoRa Sender");
   pir.initializePir();
-  sonar.initializeSonar();
+  dolphin.initializeSonar();
+  bat.initializeSonar();
   //LoRa: initialize LoRa pins
   LoRa.setPins(ss, rst, dio0);
   //replace the LoRa.begin(---E-) argument with your location's frequency 
@@ -52,24 +55,86 @@ void setup() {
 }
 
 void loop() {
+  /*
+  Okay so, I wanted to change the way I took speed by introducing a second hcsr04.
+  Now, when the PIR is triggered, I try to take back to back distance measurements from
+  each sensor with respect to time.
+  Order of Events:
+  1) PIR is tripped
+  2) Dolphin activates to get a distance measurement
+  3) Bat activates to get a distance measurements
+  4) Their distances are compared with respect to time (tracked by millis at the moment)
+    in order to obtain a speed value
+  */
   if(pir.currentStatus() == 1){
-    sonar.triggerSonar();
-    if(sonar.currentStatus() == 1){
-      while(sonar.currentStatus() == 1){
-        //Serial.println("Waiting for the FALL"); //DEBUG STATEMENT
+    dolphin.triggerSonar();
+    delay(60);
+    if(dolphin.currentStatus() == 1){
+      while(dolphin.currentStatus()){
+        Serial.println("DOLPHIN Waiting for the FALL"); //DEBUG STATEMENT
+        //delay(1);
       }
-      sonar.readDistance();
-      sonar.calculateSpeed(sonar.distance, sonar.prevDistance, sonar.echoTime, sonar.prevEchoTime);
+      dolphin.readDistance();
+      //Serial.println("Dolphin distance in inches: " + String(dolphin.distance));
+      //Serial.println("Dolphin triggerTime in mS: " + String(dolphin.triggerTime));
+      //Serial.println("Dolphin echoTime in mS: " + String(dolphin.echoTime));
+    }
+    /*
+    dolphin.readDistance();
+    Serial.println("Dolphin distance in inches: " + String(dolphin.distance));
+    Serial.println("Dolphin triggerTime in mS: " + String(dolphin.triggerTime));
+    Serial.println("Dolphin echoTime in mS: " + String(dolphin.echoTime));
+    */
+      
+    //LIGHT THE BAT SIGNAL
+    bat.triggerSonar();
+    delay(60);
+    if(bat.currentStatus() == 1){
+      while(bat.currentStatus()){
+        Serial.println("BAT Waiting for the fall");
+        //delay(1);
+      }
+      bat.readDistance();
+      //Serial.println("Bat distance in inches: " + String(bat.distance));
+      //Serial.println("Bat triggerTime in mS: " + String(bat.triggerTime));
+      //Serial.println("Bat echoTime in mS: " + String(bat.echoTime));
+    }
+    
+    /*
+    bat.readDistance();
+    Serial.println("Bat distance in inches: " + String(bat.distance));
+    Serial.println("Bat triggerTime in mS: " + String(bat.triggerTime));
+    Serial.println("Bat echoTime in mS: " + String(bat.echoTime));
+    */
+    Serial.println(bat.calculateSpeed(dolphin, bat));
+    Serial.println("Dolphin distance in inches: " + String(dolphin.distance));
+    Serial.println("Dolphin triggerTime in mS: " + String(dolphin.triggerTime));
+    Serial.println("Dolphin echoTime in mS: " + String(dolphin.echoTime));
+    Serial.println("Bat distance in inches: " + String(bat.distance));
+    Serial.println("Bat triggerTime in mS: " + String(bat.triggerTime));
+    Serial.println("Bat echoTime in mS: " + String(bat.echoTime));
+    if(bat.calculateSpeed(dolphin, bat) >= 15){
+      LoRa.beginPacket();
+      LoRa.print("Speed: " + String(bat.calculateSpeed(dolphin, bat)));
+      LoRa.print("LED ON");
+      LoRa.endPacket();
+    }
+
+    //delay(2000);
+      /*
+      dolphin.calculateSpeed(dolphin.distance, dolphin.prevDistance, dolphin.echoTime, dolphin.prevEchoTime);
 
       //LoRa: Begin sending wireless message to receiver
       LoRa.beginPacket();
-      LoRa.print("Current distance is: " + String(sonar.distance) + "\n");
-      LoRa.print("Speed: " + String(sonar.speed));
+      LoRa.print("Current distance is: " + String(dolphin.distance) + "\n");
+      LoRa.print("Speed: " + String(dolphin.speed));
       LoRa.endPacket();
-      /*Serial.println("Current distance is: " + String(sonar.distance));
-      sonar.calculateSpeed(sonar.distance, sonar.prevDistance, sonar.echoTime, sonar.prevEchoTime);
-      Serial.println("Speed: " + String(sonar.speed));*/
+      Serial.println("Current distance is: " + String(dolphin.distance));
+      Serial.println("Previous distance is: " + String(dolphin.prevDistance));
+      dolphin.calculateSpeed(dolphin.distance, dolphin.prevDistance, dolphin.echoTime, dolphin.prevEchoTime);
+      Serial.println("Speed: " + String(dolphin.speed));
+      */
 
-    }
   }
+  
 }
