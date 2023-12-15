@@ -70,21 +70,24 @@ void loop() {
     //Trigger the first sonar
     dolphin.triggerSonar();
     
+    //Adding a delay of 100ms between measurements for accuracy
+    delay(100);
+
     //LIGHT THE BAT SIGNAL AKA trigger the second sonar
     bat.triggerSonar();
     
-    //calculate speed based on the two measurements with respect to time (in cm/ms)
-    Serial.println("Speed is: " + String(bat.calculateSpeed(dolphin, bat)) + "cm/ms");
+    //DEBUG for speed calculation
+    Serial.println("Speed is: " + String(bat.calculateSpeed(dolphin, bat)) + "kmph");
     
     //DEBUG STATEMENTS
-    /*
+    
     Serial.println("Dolphin distance in cm: " + String(dolphin.distance));
     Serial.println("Dolphin pulseTime in mS: " + String(dolphin.pulseTime));
     Serial.println("Dolphin echoTime in mS: " + String(dolphin.echoTime));
     Serial.println("Bat distance in cm: " + String(bat.distance));
     Serial.println("Bat pulseTime in mS: " + String(bat.pulseTime));
     Serial.println("Bat echoTime in mS: " + String(bat.echoTime));
-    */
+    
 
     //if speed is greater than .67cm/ms or 15mph send a message to the receiver
     if(bat.calculateSpeed(dolphin, bat) >= .67){
@@ -94,7 +97,8 @@ void loop() {
       LoRa.endPacket();
     }
 
-    delay(2000);
+    while(pir.currentStatus()){};
+    //delay(2000);
   }
   
 }

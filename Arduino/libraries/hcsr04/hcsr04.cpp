@@ -37,7 +37,7 @@ float hcsr04::triggerSonar(){
 	echoTime = millis();
 
 	//calculating distance in cm
-	distance = pulseTime*0.034/2;
+	distance = (pulseTime*0.034/2);
 
 	//delay of 60mS to avoid interference with other recordings
 	delay(60);
@@ -54,17 +54,21 @@ float hcsr04::readDistance(){
 }
 
 float hcsr04::calculateSpeed(hcsr04&A, hcsr04&B){
+	
+	//DEBUG STATEMENTS
+	//Serial.println("Delta Distance: " + String(abs(B.distance - A.distance)));
+	//Serial.println("Delta Time: " + String(abs(B.echoTime - A.echoTime)));
+
 	//if either distance is 0, there is no speed
 	if(A.distance == 0 || B.distance == 0){
-		return 0;
+		speed = 0;
 	}else{
-
 		//units are cm/ms
-		
-		//DEBUG STATEMENTS
-		//Serial.println("Delta Distance: " + String(abs(B.distance - A.distance)));
-		//Serial.println("Delta Time: " + String(abs(B.echoTime - A.echoTime)));
-		
-		return (abs(((B.distance - A.distance))/float(((B.echoTime - A.echoTime)))));
+		//speed = (abs((float((B.distance - A.distance)))/float(((B.echoTime - A.echoTime)))));
+
+		//units are kmph
+		speed = abs((float((B.distance - A.distance)))/float((B.echoTime - A.echoTime)) * 36);
 	}
+
+	return speed;
 }
