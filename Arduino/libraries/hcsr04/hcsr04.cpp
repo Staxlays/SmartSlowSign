@@ -12,17 +12,52 @@ void hcsr04::initializeSonar(){
 	prevDistance = 0;
 	echoTime = 0;
 	prevEchoTime = 0;
-	triggerTime = 0;
+	pulseTime = 0;
 	deltaDistance = 0;
 	deltaTime = 0;
 	speed = 0;
 }
 
-void hcsr04::triggerSonar(){
-	triggerTime = millis();
+float hcsr04::triggerSonar(){
+	//Serial.println("Now Triggering");
+
+	//clear trigger pin
+	digitalWrite(triggerPin, LOW);
+	delay(.02);
+
+	//trigger the sonar
 	digitalWrite(triggerPin, HIGH);
 	delay(.01);
 	digitalWrite(triggerPin, LOW);
+
+	//measure the length of the return pulse
+	pulseTime = pulseIn(echoPin, HIGH);
+
+	//take note of when the return pulse completed
+	echoTime = millis();
+
+
+	//calculating distance in cm
+	distance = float(pulseTime/58);
+
+	//calculating distance in M
+	//distance = float(pulseTime/5800);
+
+	//calculating distance in KM
+	//distance = float(pulseTime/58000);
+
+
+	//pulseTime multiplied by the speed of sound in M/S divided by 2
+	//distance = float(pulseTime*340/2);
+
+
+	//calculating distance in inches
+	//distance = float(pulseTime/148);
+
+	//delay of 60mS to avoid interference with other recordings
+	delay(60);
+
+	return distance;
 }
 
 int hcsr04::currentStatus(){
@@ -30,35 +65,33 @@ int hcsr04::currentStatus(){
 }
 
 float hcsr04::readDistance(){
-	prevEchoTime = echoTime;
-	echoTime = millis();
-	prevDistance = distance;
-  	distance = ((echoTime - triggerTime) * 1000) / 148;
-  	delay(2000);
-  	return distance;
+  return distance;
 }
 
-float hcsr04::calculateSpeed(float distance, float prevDistance, long echoTime, long prevEchoTime){
-  	if((prevEchoTime >= echoTime - 7000) && (prevDistance != distance) && (prevDistance != 0)){
-        if(prevDistance >= distance){
-          deltaDistance = prevDistance - distance;
-        }else{
-          deltaDistance = distance - prevDistance;
-        }
-        deltaTime = (echoTime - prevEchoTime) / 1000;
-        //Serial.println("deltaDistance: " + String(deltaDistance) + " deltaTime: " + String(deltaTime));
-        speed = deltaDistance / float(deltaTime);
-        //Serial.println("distancePrev : " + String(prevDistance) + " distance: " + String(distance) + " timeEchoPrev: " + String(prevEchoTime) + " timeEcho: " + String(echoTime));
-        //Serial.println("Speed is: " + String(speed) + "in/S");
-        //prevEchoTime = echoTime;
-        //prevDistance = distance;
-        //delay(2000);
-        return speed;
-    }else{
-       //Serial.println("Distance is: " + String(distance));
-       //prevEchoTime = echoTime;
-       //prevDistance = distance;
-       //delay(2000);
-       return 0;
-    }
+float hcsr04::calculateSpeed(hcsr04&A, hcsr04&B){
+	
+	//DEBUG STATEMENTS
+	//Serial.println("Delta Distance: " + String(abs(B.distance - A.distance)));
+	//Serial.println("Delta Time: " + String(abs(B.echoTime - A.echoTime)));
+
+	//if either distance is 0, there is no speed
+	if(A.distance == 0 || B.distance == 0){
+		speed = 0;
+	}else{
+		//units are cm/ms
+		//speed = (abs((float((B.distance - A.distance)))/float(((B.echoTime - A.echoTime)))));
+
+		//units are ms
+		//speed = abs((float((B.distance - A.distance)))/float((B.echoTime - A.echoTime)));
+
+		//units are hours
+		//speed = (float(B.distance - A.distance))/(float(B.echoTime / 1000 / 3600 - A.echoTime / 1000 / 3600));
+
+		// cm/ms * 36 = kmph
+		//units are kmph, use cm formula for calulating distance then plug in below
+		speed = abs((float((B.distance - A.distance)))/float((B.echoTime - A.echoTime))) * 36;
+
+	}
+
+	return speed;
 }

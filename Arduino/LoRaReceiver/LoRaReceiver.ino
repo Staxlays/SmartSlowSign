@@ -11,6 +11,12 @@
 #define rst 14
 #define dio0 2
 
+//define the pin used by the LED
+#define speedingLED 32
+
+int ledTimer;
+bool enableLED = false;
+
 void setup() {
   //initialize Serial Monitor
   Serial.begin(115200);
@@ -28,14 +34,20 @@ void setup() {
     Serial.println(".");
     delay(500);
   }
-   // Change sync word (0xF3) to match the receiver
+   // Change sync word (0XD9) to match the receiver
   // The sync word assures you don't get LoRa messages from other LoRa transceivers
   // ranges from 0-0xFF
   LoRa.setSyncWord(0xD9);
   Serial.println("LoRa Initializing OK!");
+
+  pinMode(speedingLED, OUTPUT);
 }
 
 void loop() {
+  /*digitalWrite(speedingLED, HIGH);
+  delay(100);
+  digitalWrite(speedingLED, LOW);
+  delay(50);*/
   // try to parse packet
   int packetSize = LoRa.parsePacket();
   if (packetSize) {
@@ -45,11 +57,30 @@ void loop() {
     // read packet
     while (LoRa.available()) {
       String LoRaData = LoRa.readString();
-      Serial.print(LoRaData); 
+      Serial.print(LoRaData);
+      if(LoRaData.indexOf("LED" >= 0)){
+        enableLED = true;
+      } 
     }
-
     // print RSSI of packet
     Serial.print("' with RSSI ");
     Serial.println(LoRa.packetRssi());
   }
+  //Enable LED if the message has the included keyphrase
+  if(enableLED){
+    //make the LED flash for three seconds
+    //take note of start time
+    ledTimer = millis();
+    //for three seconds after the start time, turn the LED on and off repeatedly
+    while(millis() <= ledTimer + 3000){
+      digitalWrite(speedingLED, HIGH);
+      delay(100);
+      digitalWrite(speedingLED, LOW);
+      delay(50);
+    }
+    //ensure the LED is off after the timer has expired
+    digitalWrite(speedingLED, LOW);
+    enableLED = false;
+  }
+
 }

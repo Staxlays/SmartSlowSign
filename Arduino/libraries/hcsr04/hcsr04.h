@@ -7,16 +7,17 @@ class hcsr04{
 public:
 	hcsr04(int e, int t);
 	void initializeSonar();
-	void triggerSonar();
+	float triggerSonar();
 	int currentStatus();
 	float readDistance();
-	float calculateSpeed(float distance, float prevDistance, long echoTime, long prevEchoTime);
+	//float calculateSpeed(float distance, float prevDistance, long echoTime, long prevEchoTime);
+	float calculateSpeed(hcsr04&A, hcsr04&B);
 
 	float distance;
 	float prevDistance;
 	long echoTime;
 	long prevEchoTime;
-	long triggerTime;
+	long pulseTime;
 
 	float deltaDistance;
 	float speed;
