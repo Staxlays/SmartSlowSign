@@ -80,19 +80,17 @@ void loop() {
     Serial.println("Speed is: " + String(bat.calculateSpeed(dolphin, bat)) + "kmph");
     
     //DEBUG STATEMENTS
-    
     Serial.println("Dolphin distance in cm: " + String(dolphin.distance));
-    Serial.println("Dolphin pulseTime in mS: " + String(dolphin.pulseTime));
+    //Serial.println("Dolphin pulseTime in mS: " + String(dolphin.pulseTime));
     Serial.println("Dolphin echoTime in mS: " + String(dolphin.echoTime));
     Serial.println("Bat distance in cm: " + String(bat.distance));
-    Serial.println("Bat pulseTime in mS: " + String(bat.pulseTime));
+    //Serial.println("Bat pulseTime in mS: " + String(bat.pulseTime));
     Serial.println("Bat echoTime in mS: " + String(bat.echoTime));
-    
 
     //if speed is greater than .67cm/ms or 15mph send a message to the receiver
-    if(bat.calculateSpeed(dolphin, bat) >= .67){
+    if(bat.calculateSpeed(dolphin, bat) >= 5){
       LoRa.beginPacket();
-      LoRa.print("Speed: " + String(bat.calculateSpeed(dolphin, bat)));
+      LoRa.print("Speed: " + String(bat.calculateSpeed(dolphin, bat)) + "kmph LED ON");
       //LoRa.print("LED ON");
       LoRa.endPacket();
     }

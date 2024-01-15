@@ -36,8 +36,23 @@ float hcsr04::triggerSonar(){
 	//take note of when the return pulse completed
 	echoTime = millis();
 
+
 	//calculating distance in cm
-	distance = (pulseTime*0.034/2);
+	distance = float(pulseTime/58);
+
+	//calculating distance in M
+	//distance = float(pulseTime/5800);
+
+	//calculating distance in KM
+	//distance = float(pulseTime/58000);
+
+
+	//pulseTime multiplied by the speed of sound in M/S divided by 2
+	//distance = float(pulseTime*340/2);
+
+
+	//calculating distance in inches
+	//distance = float(pulseTime/148);
 
 	//delay of 60mS to avoid interference with other recordings
 	delay(60);
@@ -66,8 +81,16 @@ float hcsr04::calculateSpeed(hcsr04&A, hcsr04&B){
 		//units are cm/ms
 		//speed = (abs((float((B.distance - A.distance)))/float(((B.echoTime - A.echoTime)))));
 
-		//units are kmph
-		speed = abs((float((B.distance - A.distance)))/float((B.echoTime - A.echoTime)) * 36);
+		//units are ms
+		//speed = abs((float((B.distance - A.distance)))/float((B.echoTime - A.echoTime)));
+
+		//units are hours
+		//speed = (float(B.distance - A.distance))/(float(B.echoTime / 1000 / 3600 - A.echoTime / 1000 / 3600));
+
+		// cm/ms * 36 = kmph
+		//units are kmph, use cm formula for calulating distance then plug in below
+		speed = abs((float((B.distance - A.distance)))/float((B.echoTime - A.echoTime))) * 36;
+
 	}
 
 	return speed;
