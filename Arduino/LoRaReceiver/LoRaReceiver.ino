@@ -5,14 +5,15 @@
 
 #include <SPI.h>
 #include <LoRa.h>
+#include <led.h>
 
 //define the pins used by the transceiver module
 #define ss 5
 #define rst 14
 #define dio0 2
 
-//define the pin used by the LED
-#define speedingLED 32
+//Create the LED object and assign the connected pin value to it
+LED LED(32);
 
 int ledTimer;
 bool enableLED = false;
@@ -34,20 +35,16 @@ void setup() {
     Serial.println(".");
     delay(500);
   }
-   // Change sync word (0XD9) to match the receiver
+  // Change sync word (0XD9) to match the receiver
   // The sync word assures you don't get LoRa messages from other LoRa transceivers
   // ranges from 0-0xFF
   LoRa.setSyncWord(0xD9);
   Serial.println("LoRa Initializing OK!");
 
-  pinMode(speedingLED, OUTPUT);
+  LED.initializeLED();
 }
 
 void loop() {
-  /*digitalWrite(speedingLED, HIGH);
-  delay(100);
-  digitalWrite(speedingLED, LOW);
-  delay(50);*/
   // try to parse packet
   int packetSize = LoRa.parsePacket();
   if (packetSize) {
@@ -58,6 +55,7 @@ void loop() {
     while (LoRa.available()) {
       String LoRaData = LoRa.readString();
       Serial.print(LoRaData);
+      //check if the message contains the LED keyphrase
       if(LoRaData.indexOf("LED" >= 0)){
         enableLED = true;
       } 
@@ -69,17 +67,7 @@ void loop() {
   //Enable LED if the message has the included keyphrase
   if(enableLED){
     //make the LED flash for three seconds
-    //take note of start time
-    ledTimer = millis();
-    //for three seconds after the start time, turn the LED on and off repeatedly
-    while(millis() <= ledTimer + 3000){
-      digitalWrite(speedingLED, HIGH);
-      delay(100);
-      digitalWrite(speedingLED, LOW);
-      delay(50);
-    }
-    //ensure the LED is off after the timer has expired
-    digitalWrite(speedingLED, LOW);
+    LED.flashingLED();
     enableLED = false;
   }
 

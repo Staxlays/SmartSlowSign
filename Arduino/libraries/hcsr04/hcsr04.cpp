@@ -9,15 +9,12 @@ void hcsr04::initializeSonar(){
 	pinMode(echoPin, INPUT_PULLUP);
 	pinMode(triggerPin, OUTPUT);
 	distance = 0;
-	prevDistance = 0;
 	echoTime = 0;
-	prevEchoTime = 0;
 	pulseTime = 0;
-	deltaDistance = 0;
-	deltaTime = 0;
 	speed = 0;
 }
 
+//Sends the trigger pulse to the sonar then calculates the distance found
 float hcsr04::triggerSonar(){
 	//Serial.println("Now Triggering");
 
@@ -30,10 +27,10 @@ float hcsr04::triggerSonar(){
 	delay(.01);
 	digitalWrite(triggerPin, LOW);
 
-	//measure the length of the return pulse
+	//measure the length of the return pulse, used for distance calculation
 	pulseTime = pulseIn(echoPin, HIGH);
 
-	//take note of when the return pulse completed
+	//take note of when the return pulse completed, used for speed calculation
 	echoTime = millis();
 
 
@@ -60,14 +57,6 @@ float hcsr04::triggerSonar(){
 	return distance;
 }
 
-int hcsr04::currentStatus(){
-	return digitalRead(echoPin);
-}
-
-float hcsr04::readDistance(){
-  return distance;
-}
-
 float hcsr04::calculateSpeed(hcsr04&A, hcsr04&B){
 	
 	//DEBUG STATEMENTS
@@ -87,8 +76,8 @@ float hcsr04::calculateSpeed(hcsr04&A, hcsr04&B){
 		//units are hours
 		//speed = (float(B.distance - A.distance))/(float(B.echoTime / 1000 / 3600 - A.echoTime / 1000 / 3600));
 
-		// cm/ms * 36 = kmph
-		//units are kmph, use cm formula for calulating distance then plug in below
+		// cm/ms * 36 = kmh
+		//units are kmh, use cm formula for calulating distance then plug in below
 		speed = abs((float((B.distance - A.distance)))/float((B.echoTime - A.echoTime))) * 36;
 
 	}

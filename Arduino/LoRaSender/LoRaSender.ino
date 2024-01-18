@@ -77,7 +77,7 @@ void loop() {
     bat.triggerSonar();
     
     //DEBUG for speed calculation
-    Serial.println("Speed is: " + String(bat.calculateSpeed(dolphin, bat)) + "kmph");
+    Serial.println("Speed is: " + String(bat.calculateSpeed(dolphin, bat)) + "kmh");
     
     //DEBUG STATEMENTS
     Serial.println("Dolphin distance in cm: " + String(dolphin.distance));
@@ -87,16 +87,17 @@ void loop() {
     //Serial.println("Bat pulseTime in mS: " + String(bat.pulseTime));
     Serial.println("Bat echoTime in mS: " + String(bat.echoTime));
 
-    //if speed is greater than .67cm/ms or 15mph send a message to the receiver
+    //if speed is greater than .67cm/ms, 15mph, or 24.14kmh send a message to the receiver
+    //sending a packet that contains the string 'LED' will activate the LED(s) connected to the receiver
     if(bat.calculateSpeed(dolphin, bat) >= 5){
       LoRa.beginPacket();
-      LoRa.print("Speed: " + String(bat.calculateSpeed(dolphin, bat)) + "kmph LED ON");
+      LoRa.print("Speed: " + String(bat.calculateSpeed(dolphin, bat)) + "kmh LED ON");
       //LoRa.print("LED ON");
       LoRa.endPacket();
     }
 
+    //wait for the hardware delay in the PIR sensor to pass
     while(pir.currentStatus()){};
-    //delay(2000);
   }
   
 }
